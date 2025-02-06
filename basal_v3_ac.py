@@ -137,7 +137,7 @@ connections_left = {
         ("SC", 3.0, 1.0, "all_to_all")
     ],
     "GPe": [
-        ("STN", -3.0, 1.0, "all_to_all"),
+        ("STN", -3.0, 1.0, "pairwise_bernoulli", 0.7),
         ("MSd", -2.5, 1.5, "pairwise_bernoulli", 0.3),
         ("MSi", -2.5, 1.5, "pairwise_bernoulli", 0.3)
     ],
@@ -167,7 +167,43 @@ connections_left = {
     ]
 }
 # За дясната половина използваме идентична схема
-connections_right = connections_left.copy()
+# connections_right = connections_left.copy()
+
+connections_right = {
+    "STN": [
+        ("GPe", 3.0, 1.0, "all_to_all"),
+        ("SC", 3.0, 1.0, "all_to_all")
+    ],
+    "GPe": [
+        ("STN", -3.0, 1.0, "pairwise_bernoulli", nest.spatial_distributions.gaussian(nest.spatial.distance, std=0.2),{'circular': {'radius': 0.75}},),
+        ("MSd", -2.0, 4.5, "pairwise_bernoulli", 0.4),
+        ("MSi", -2.5, 1.5, "pairwise_bernoulli", 0.3)
+    ],
+    "MSd": [
+        ("FSd", -3.0, 1.0, "all_to_all"),
+        ("SNr", -3.0, 1.0, "all_to_all")
+    ],
+    "MSi": [
+        ("FSi", -3.0, 1.0, "all_to_all"),
+        ("SNr", -3.0, 1.0, "all_to_all")
+    ],
+    "FSd": [
+        ("GPe", -2.0, 1.0, "all_to_all"),
+        ("SNr", -3.0, 1.0, "all_to_all")
+    ],
+    "FSi": [
+        ("GPe", -2.0, 1.0, "all_to_all"),
+        ("SNr", -3.0, 1.0, "all_to_all")
+    ],
+    "SNr": [
+        ("STN", -3.0, 1.0, "all_to_all"),
+        ("SC", -3.0, 1.0, "all_to_all")
+    ],
+    "SC": [
+        ("STN", 3.0, 1.0, "all_to_all"),
+        ("GPe", 3.0, 1.0, "all_to_all")
+    ]
+}
 
 # Функция за свързване на връзките (както беше в предишната версия)
 def connect_population(pop_dict, connection_dict):
@@ -180,6 +216,10 @@ def connect_population(pop_dict, connection_dict):
             elif len(conn) == 5:
                 target, weight, delay, rule, p = conn
                 conn_dict = {"rule": rule, "p": p}
+                syn_spec = {"weight": weight, "delay": delay}
+            elif len(conn) == 6:
+                target, weight, delay, rule, p, mask = conn
+                conn_dict = {"rule": rule, "p": p, 'mask': mask}
                 syn_spec = {"weight": weight, "delay": delay}
             else:
                 raise ValueError("Невалиден формат на връзката!")
@@ -296,20 +336,16 @@ plt.title("Средна Spike Firing Rate по популация")
 plt.tight_layout()
 plt.show()
 
-
-
-# Извличане на данните за популацията "STN" от лявата половина
-stn_times, stn_senders = raster_data_LEFT["STN"]
-
-# Плотиране на Raster Plot само за "STN"
-plt.figure(figsize=(10, 4))
-plt.scatter(stn_times, stn_senders, s=10, color='blue')
-plt.xlabel("Време (ms)")
-plt.ylabel("ID на неврона")
-plt.title("Raster Plot за популацията STN (лява половина)")
-plt.legend()
-plt.tight_layout()
-plt.show()
+for n_type in neuron_types:
+    times, senders = raster_data_LEFT[n_type]
+    plt.figure(figsize=(10, 4))
+    plt.scatter(times, senders, s=10, color=colors[n_type])
+    plt.xlabel("Време (ms)")
+    plt.ylabel("ID на неврона")
+    plt.title(f"Raster Plot за популацията {n_type} (лява половина)")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
 
 
 
